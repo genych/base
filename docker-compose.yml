@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  db:
+    image: mysql:8.1
+    ports:
+      - "5432:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: hunter2
+      MYSQL_DATABASE: base
+
+  php:
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    image: ghcr.io/genych/php82:latest
+    volumes:
+      - .:/www
+    working_dir: /www
+    command: sh start.sh
+    depends_on:
+      - db
+    environment:
+      - XDEBUG_MODE=debug,profile
+      - APP_ENV=dev
+    restart: on-failure
+
+  nginx:
+    build:
+      context: .nginx
+      dockerfile: nginx.Dockerfile
+    volumes:
+      - ./public:/www/public
+    ports:
+      - "80:80"
+      - "443:443"
+    links:
+      - php
